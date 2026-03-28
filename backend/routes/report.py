@@ -18,6 +18,7 @@ REPORTS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "reports"
 
 def _format_record(record: Record) -> dict:
     return {
+        "id": record.id,
         "english_text": record.english_text,
         "logged_at": record.logged_at,
         "coordinates": json.loads(record.coordinates) if record.coordinates else None,

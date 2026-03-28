@@ -53,7 +53,11 @@ def format_law_lines(laws):
 
 
 def generate_hash(record):
-    record_string = json.dumps(record, sort_keys=True, default=str)
+    hash_payload = {
+        "id": record.get("id"),
+        "record": record,
+    }
+    record_string = json.dumps(hash_payload, sort_keys=True, default=str)
     return hashlib.sha256(record_string.encode()).hexdigest()
 
 
@@ -191,6 +195,8 @@ def generate_pdf(records, path):
                 c.line(50, y, 250, y)
                 y -= line_height
 
+        c.line(50, y, 550, y)
+        y -= 10
         y -= section_gap
 
     _draw_verification_footer(c, w)
