@@ -33,30 +33,48 @@ async def process_audio(
     os.makedirs("temp", exist_ok=True)
 
     file_path = f"temp/{file.filename}"
-
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
-    enc_path = encrypt_file(file_path)
-    os.remove(file_path)
-
+    enc_path = None
     dec_path = f"temp/dec_{file.filename}"
-    decrypt_file(enc_path, dec_path)
 
-    result = full_pipeline(
-        dec_path,
-        browser_location=parsed_browser_location,
-        accused=parsed_accused,
-    )
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
 
-    result.setdefault("accused_details", {
-        "name": None,
-        "relation": None,
-        "description": None,
-    })
+        enc_path = encrypt_file(file_path)
+        os.remove(file_path)
 
-    os.remove(dec_path)
+        decrypt_file(enc_path, dec_path)
 
-    result["encrypted_audio_path"] = enc_path
+        result = full_pipeline(
+            dec_path,
+            browser_location=parsed_browser_location,
+            accused=parsed_accused,
+        )
 
-    return result
+        result.setdefault("accused_details", {
+            "name": None,
+            "relation": None,
+            "description": None,
+        })
+
+        result["encrypted_audio_path"] = enc_path
+
+        return result
+    except HTTPException:
+        raise
+    except Exception as exc:
+        error_message = str(exc).lower()
+        if "temporary failure in name resolution" in error_message or "connecterror" in error_message:
+            raise HTTPException(
+                status_code=503,
+                detail="Audio transcription service is unreachable right now. Check your internet connection and API service access, then retry.",
+            ) from exc
+        raise HTTPException(
+            status_code=500,
+            detail=f"Audio processing failed: {exc}",
+        ) from exc
+    finally:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        if os.path.exists(dec_path):
+            os.remove(dec_path)

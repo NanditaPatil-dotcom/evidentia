@@ -15,7 +15,7 @@ def _normalize_browser_location(browser_location):
     if not isinstance(browser_location, dict):
         return browser_location, None
 
-    city = browser_location.get("city")
+    city = browser_location.get("city") or browser_location.get("address")
     coordinates = browser_location.get("coordinates")
 
     if city:
