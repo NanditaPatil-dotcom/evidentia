@@ -13,6 +13,7 @@ except ModuleNotFoundError:
     from utils.pdf_generator import generate_pdf
 
 router = APIRouter()
+REPORTS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "reports")
 
 
 def _format_record(record: Record) -> dict:
@@ -50,9 +51,9 @@ def generate_pdf_api():
 
     formatted_data = [_format_record(record) for record in records]
 
-    os.makedirs("reports", exist_ok=True)
+    os.makedirs(REPORTS_DIR, exist_ok=True)
     filename = f"report_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.pdf"
-    path = f"reports/{filename}"
+    path = os.path.join(REPORTS_DIR, filename)
 
     generate_pdf(formatted_data, path)
 

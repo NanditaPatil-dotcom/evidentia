@@ -1,4 +1,5 @@
-from fastapi import APIRouter, UploadFile
+from fastapi import APIRouter, Form, HTTPException, UploadFile
+import json
 import shutil, os
 
 from core.main import full_pipeline
@@ -9,8 +10,18 @@ except ModuleNotFoundError:
 
 router = APIRouter()
 
+
 @router.post("/process-audio/")
-async def process_audio(file: UploadFile):
+async def process_audio(
+    file: UploadFile,
+    browser_location: str | None = Form(None),
+):
+    parsed_browser_location = None
+    if browser_location:
+        try:
+            parsed_browser_location = json.loads(browser_location)
+        except json.JSONDecodeError as exc:
+            raise HTTPException(status_code=400, detail="Invalid browser_location JSON") from exc
 
     os.makedirs("temp", exist_ok=True)
 
@@ -25,7 +36,7 @@ async def process_audio(file: UploadFile):
     dec_path = f"temp/dec_{file.filename}"
     decrypt_file(enc_path, dec_path)
 
-    result = full_pipeline(dec_path)
+    result = full_pipeline(dec_path, browser_location=parsed_browser_location)
 
     os.remove(dec_path)
 
