@@ -6,11 +6,12 @@ sys.path.insert(0, BASE_DIR)
 
 from fastapi import FastAPI
 
-from backend.routes import audio, records, report
+from backend.routes import audio, auth, records, report
 
 app = FastAPI()
 
 
 app.include_router(audio.router)
+app.include_router(auth.router)
 app.include_router(records.router)
 app.include_router(report.router)

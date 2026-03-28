@@ -21,3 +21,18 @@ class Record(Base):
     coordinates = Column(Text)
 
     encrypted_audio_path = Column(String)
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    name = Column(String)
+    dob = Column(String)
+    phone = Column(String)
+    email = Column(String, nullable=True)
+
+    location_permission = Column(String)  # "granted" / "denied"
+
+    password = Column(String, nullable=True)  # hashed
