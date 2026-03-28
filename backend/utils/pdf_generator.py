@@ -63,67 +63,136 @@ def _draw_page_header(c, y):
     return y - 25
 
 
-def _build_record_lines(index, record):
-    lines = []
+def _draw_verification_footer(c, page_width):
+    footer_text = (
+        "This document is a computer-generated evidence report. "
+        "The integrity of the data is protected by the digital hash "
+        "provided for each entry. For verification, visit Evidentia"
+    )
+    footer_lines = _wrap_text(footer_text, 100)
+    y = 38
+
+    c.line(50, 58, page_width - 50, 58)
+    for line in footer_lines:
+        c.setFont("Helvetica", 8)
+        c.drawString(50, y, line)
+        y -= 10
+
+
+def _wrap_text(value, width=62):
+    return [line.strip() for line in wrap(str(value or ""), width) if line.strip()] or [""]
+
+
+def _build_record_ops(index, record):
+    ops = []
     hash_value = generate_hash(record)
     report_id = f"EV-2026-{index:03d}"
 
-    lines.append(("Helvetica-Bold", 12, f"ID: {report_id}"))
-    lines.append(("Helvetica", 10, f"Timestamp: {record['logged_at']}"))
+    ops.append(("meta", "ID:", report_id))
+    ops.append(("meta", "Timestamp:", record["logged_at"]))
 
     if record.get("coordinates"):
-        lines.append(("Helvetica", 10, f"Location: {record['coordinates']}"))
-
-    lines.append(("Helvetica", 10, "Statement:"))
+        ops.append(("meta", "Location:", record["coordinates"]))
 
     statement_lines = record.get("statements") or []
     if statement_lines:
-        for statement in statement_lines:
-            for line in wrap(statement):
-                lines.append(("Helvetica", 10, f"  {line.strip()}"))
+        statement_text = " ".join(statement_lines)
     else:
-        for line in wrap(record["english_text"]):
-            lines.append(("Helvetica", 10, f"  {line.strip()}"))
+        statement_text = record.get("english_text", "")
+    ops.append(("section", "Statement:", _wrap_text(statement_text, 70)))
 
     for law_line in format_law_lines(record.get("laws")):
-        lines.append(("Helvetica", 10, law_line))
+        label, value = law_line.split(": ", 1)
+        ops.append(("meta", f"{label}:", value))
 
     accused = record.get("accused_details")
     if accused and accused.get("name"):
-        lines.append(("Helvetica", 10, f"Accused: {accused['name']} ({accused.get('relation', '')})"))
+        ops.append(("meta", "Accused:", f"{accused['name']} ({accused.get('relation', '')})"))
     else:
-        lines.append(("Helvetica", 10, "Accused: Not specified"))
+        ops.append(("meta", "Accused:", "Not specified"))
 
-    lines.append(("Helvetica", 10, "Attachments: Audio_Ref"))
-    lines.append(("Helvetica", 10, "-" * 34))
-    lines.append(("Helvetica", 10, f"Digital Hash: {hash_value[:20]}..."))
+    ops.append(("meta", "Attachments:", "Audio_Ref"))
+    ops.append(("divider",))
+    ops.append(("meta", "Digital Hash:", f"{hash_value[:20]}..."))
 
-    return lines
+    return ops
+
+
+def _estimate_height(ops, line_height, section_gap):
+    height = 0
+
+    for op in ops:
+        kind = op[0]
+        if kind == "meta":
+            value_lines = _wrap_text(op[2], 55)
+            height += len(value_lines) * line_height
+        elif kind == "section":
+            height += line_height
+            height += len(op[2]) * line_height
+        elif kind == "divider":
+            height += line_height
+
+    return height + section_gap
+
+
+def _draw_meta_row(c, y, label, value, line_height):
+    label_x = 50
+    value_x = 170
+    value_lines = _wrap_text(value, 55)
+
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(label_x, y, label)
+
+    for index, line in enumerate(value_lines):
+        c.setFont("Helvetica", 10)
+        c.drawString(value_x, y - (index * line_height), line)
+
+    return y - (len(value_lines) * line_height)
+
+
+def _draw_section(c, y, label, lines, line_height):
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(50, y, label)
+    y -= line_height
+
+    for line in lines:
+        c.setFont("Helvetica", 10)
+        c.drawString(60, y, line)
+        y -= line_height
+
+    return y
 
 
 def generate_pdf(records, path):
     c = canvas.Canvas(path, pagesize=A4)
     w, h = A4
     top_y = h - 50
-    bottom_margin = 70
+    bottom_margin = 95
     line_height = 15
     section_gap = 20
     y = _draw_page_header(c, top_y)
 
     for i, r in enumerate(records, 1):
-        record_lines = _build_record_lines(i, r)
-        required_height = (len(record_lines) * line_height) + section_gap
+        record_ops = _build_record_ops(i, r)
+        required_height = _estimate_height(record_ops, line_height, section_gap)
 
         if y - required_height < bottom_margin:
+            _draw_verification_footer(c, w)
             c.showPage()
             y = _draw_page_header(c, top_y)
 
-        for font_name, font_size, text in record_lines:
-            c.setFont(font_name, font_size)
-            c.drawString(50, y, text)
-            y -= line_height
+        for op in record_ops:
+            kind = op[0]
+            if kind == "meta":
+                y = _draw_meta_row(c, y, op[1], op[2], line_height)
+            elif kind == "section":
+                y = _draw_section(c, y, op[1], op[2], line_height)
+            elif kind == "divider":
+                c.line(50, y, 250, y)
+                y -= line_height
 
         y -= section_gap
 
+    _draw_verification_footer(c, w)
     c.save()
     return path
