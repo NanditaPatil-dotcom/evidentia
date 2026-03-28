@@ -1,7 +1,7 @@
 from speech import process_audio
 from classifier import classify_event
 from entity_extractor import extract_entities
-
+from legal_mapper import legal_mapping
 
 def full_pipeline(audio_path):
     # 🎤 Step 1: Speech → English
@@ -14,11 +14,16 @@ def full_pipeline(audio_path):
     # 🏷️ Step 3: Entity extraction
     entities = extract_entities(text)
 
+    # ⚖️ Step 4: Legal mapping
+    legal = legal_mapping(events, entities)
+
     return {
         "original_audio": speech_output["original_audio"],
         "transcript": text,
         "events": events,
-        "entities": entities
+        "entities": entities,
+        "laws": legal["laws"],
+        "statements": legal["statements"]
     }
 
 
