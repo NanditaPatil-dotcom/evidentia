@@ -30,9 +30,6 @@ def format_law_lines(laws):
 
     lines = []
 
-    if ipc_laws:
-        lines.append("Laws: " + ", ".join(ipc_laws))
-
     if bns_laws and ipc_laws:
         lines.append(
             "Relevant Sections: "
@@ -43,13 +40,14 @@ def format_law_lines(laws):
         )
     elif bns_laws:
         lines.append("Relevant Sections: " + ", ".join(bns_laws))
+    elif ipc_laws:
+        lines.append("Relevant Sections: " + ", ".join(ipc_laws))
 
     if other_laws:
-        label = "Relevant Sections" if lines else "Laws"
-        lines.append(f"{label}: " + ", ".join(other_laws))
+        lines.append("Relevant Sections: " + ", ".join(other_laws))
 
     if not lines:
-        lines.append("Laws: Not specified")
+        lines.append("Relevant Sections: Not specified")
 
     return lines
 
@@ -59,65 +57,73 @@ def generate_hash(record):
     return hashlib.sha256(record_string.encode()).hexdigest()
 
 
+def _draw_page_header(c, y):
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(50, y, "REPORT SUMMARY")
+    return y - 25
+
+
+def _build_record_lines(index, record):
+    lines = []
+    hash_value = generate_hash(record)
+    report_id = f"EV-2026-{index:03d}"
+
+    lines.append(("Helvetica-Bold", 12, f"ID: {report_id}"))
+    lines.append(("Helvetica", 10, f"Timestamp: {record['logged_at']}"))
+
+    if record.get("coordinates"):
+        lines.append(("Helvetica", 10, f"Location: {record['coordinates']}"))
+
+    lines.append(("Helvetica", 10, "Statement:"))
+
+    statement_lines = record.get("statements") or []
+    if statement_lines:
+        for statement in statement_lines:
+            for line in wrap(statement):
+                lines.append(("Helvetica", 10, f"  {line.strip()}"))
+    else:
+        for line in wrap(record["english_text"]):
+            lines.append(("Helvetica", 10, f"  {line.strip()}"))
+
+    for law_line in format_law_lines(record.get("laws")):
+        lines.append(("Helvetica", 10, law_line))
+
+    accused = record.get("accused_details")
+    if accused and accused.get("name"):
+        lines.append(("Helvetica", 10, f"Accused: {accused['name']} ({accused.get('relation', '')})"))
+    else:
+        lines.append(("Helvetica", 10, "Accused: Not specified"))
+
+    lines.append(("Helvetica", 10, "Attachments: Audio_Ref"))
+    lines.append(("Helvetica", 10, "-" * 34))
+    lines.append(("Helvetica", 10, f"Digital Hash: {hash_value[:20]}..."))
+
+    return lines
+
+
 def generate_pdf(records, path):
     c = canvas.Canvas(path, pagesize=A4)
     w, h = A4
+    top_y = h - 50
+    bottom_margin = 70
+    line_height = 15
+    section_gap = 20
+    y = _draw_page_header(c, top_y)
 
     for i, r in enumerate(records, 1):
-        y = h - 50
+        record_lines = _build_record_lines(i, r)
+        required_height = (len(record_lines) * line_height) + section_gap
 
-        c.setFont("Helvetica-Bold", 16)
-        c.drawString(50, y, "REPORT SUMMARY")
-        y -= 25
-
-        hash_value = generate_hash(r)
-
-        report_id = f"EV-2026-{i:03d}"
-        c.setFont("Helvetica-Bold", 12)
-        c.drawString(50, y, f"ID: {report_id}")
-        y -= 20
-
-        c.setFont("Helvetica", 10)
-        c.drawString(50, y, f"Timestamp: {r['logged_at']}")
-        y -= 15
-
-        if r.get("coordinates"):
-            c.drawString(50, y, f"Location: {r['coordinates']}")
-            y -= 15
-
-        c.drawString(50, y, "Statement:")
-        y -= 15
-
-        statement_lines = r.get("statements") or []
-        if statement_lines:
-            for statement in statement_lines:
-                for line in wrap(statement):
-                    c.drawString(60, y, line)
-                    y -= 15
-        else:
-            for line in wrap(r["english_text"]):
-                c.drawString(60, y, line)
-                y -= 15
-
-        for law_line in format_law_lines(r.get("laws")):
-            c.drawString(50, y, law_line)
-            y -= 15
-
-        accused = r.get("accused_details")
-        if accused and accused.get("name"):
-            c.drawString(50, y, f"Accused: {accused['name']} ({accused.get('relation', '')})")
-        else:
-            c.drawString(50, y, "Accused: Not specified")
-        y -= 15
-
-        c.drawString(50, y, "Attachments: Audio_Ref")
-        y -= 20
-
-        c.line(50, 65, w - 50, 65)
-        c.drawString(50, 50, f"Digital Hash: {hash_value[:20]}...")
-
-        if i < len(records):
+        if y - required_height < bottom_margin:
             c.showPage()
+            y = _draw_page_header(c, top_y)
+
+        for font_name, font_size, text in record_lines:
+            c.setFont(font_name, font_size)
+            c.drawString(50, y, text)
+            y -= line_height
+
+        y -= section_gap
 
     c.save()
     return path
