@@ -1,5 +1,5 @@
 EVENT_TO_LAW = {
-    "physical abuse": ["IPC 323"],
+    "physical abuse": ["BNS Section 115", "IPC 323"],
     "threat": ["IPC 506"],
     "verbal abuse": ["Domestic Violence Act"],
     "harassment": ["Domestic Violence Act"],
@@ -30,15 +30,17 @@ def normalize_date(date_text):
     return date_text  
 
 def map_laws(events):
-    laws = set()
+    laws = []
 
     for event in events:
         label = event["label"]
 
         if label in EVENT_TO_LAW:
-            laws.update(EVENT_TO_LAW[label])
+            for law in EVENT_TO_LAW[label]:
+                if law not in laws:
+                    laws.append(law)
 
-    return list(laws)
+    return laws
 
 def generate_statement(events, entities):
     date = normalize_date(entities.get("date"))
@@ -64,7 +66,6 @@ def legal_mapping(events, entities):
         "laws": laws,
         "statements": statements
     }
-
 
 
 
