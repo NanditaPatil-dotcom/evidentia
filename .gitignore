@@ -191,8 +191,6 @@ spacy_models/
 # Whisper models
 .whisper/
 
-# Hugging Face cache
-.cache/huggingface/
 .cache/torch/
 
 
@@ -247,3 +245,5 @@ logs/
 *.secret
 secrets.json
 credentials.json
+
+sample.wav
