@@ -1,12 +1,12 @@
 from datetime import datetime
 
 try:
-    from core.speech import process_audio
+    from core.speech_pipeline import process_audio
     from core.classifier import classify_event, clean_events
     from core.entity_extractor import extract_entities
     from core.legal_mapper import legal_mapping
 except ModuleNotFoundError:
-    from speech import process_audio
+    from core.speech_pipeline import process_audio
     from classifier import classify_event, clean_events
     from entity_extractor import extract_entities
     from legal_mapper import legal_mapping
