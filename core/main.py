@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from speech import process_audio
-from classifier import classify_event
+from classifier import classify_event, clean_events
 from entity_extractor import extract_entities
 from legal_mapper import legal_mapping
 
@@ -33,7 +33,8 @@ def full_pipeline(audio_path, browser_location=None):
     location_text, coordinates = _normalize_browser_location(browser_location)
 
     # 🧠 Step 2: Event classification
-    events = classify_event(text)
+    events = classify_event(text, top_k=2)
+    events = clean_events(events)
     # 🏷️ Step 3: Entity extraction
     entities = extract_entities(text)
     entities.update(
