@@ -14,8 +14,9 @@ def extract_entities(text):
             entities["person"] = ent.text
 
     text_lower = text.lower()
-
-    if any(word in text_lower for word in ["he", "him", "husband"]):
-        entities["person"] = "accused"
+    entities["roles"] = {
+        "accused": any(word in text_lower for word in ["he", "him", "husband"]),
+        "complainant": True,
+    }
 
     return entities

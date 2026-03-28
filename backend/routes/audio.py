@@ -49,6 +49,12 @@ async def process_audio(
         accused=parsed_accused,
     )
 
+    result.setdefault("accused_details", {
+        "name": None,
+        "relation": None,
+        "description": None,
+    })
+
     os.remove(dec_path)
 
     result["encrypted_audio_path"] = enc_path

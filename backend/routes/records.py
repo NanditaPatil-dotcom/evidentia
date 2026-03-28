@@ -17,18 +17,13 @@ def save_record(data: dict):
     record = Record(
         regional_text=data["regional_text"],
         english_text=data["english_text"],
+        logged_at=data["logged_at"],
+        coordinates=json.dumps(data["coordinates"]),
         events=json.dumps(data["events"]),
         entities=json.dumps(data["entities"]),
         laws=json.dumps(data["laws"]),
         statements=json.dumps(data["statements"]),
-        accused_details=json.dumps(
-            data.get(
-                "accused_details",
-                {"name": None, "relation": None, "description": None},
-            )
-        ),
-        logged_at=data["logged_at"],
-        coordinates=json.dumps(data["coordinates"]),
+        accused_details=json.dumps(data.get("accused_details")),
         encrypted_audio_path=data.get("encrypted_audio_path"),
     )
 
@@ -56,11 +51,7 @@ def get_records():
             "entities": json.loads(r.entities),
             "laws": json.loads(r.laws),
             "statements": json.loads(r.statements),
-            "accused_details": json.loads(r.accused_details) if r.accused_details else {
-                "name": None,
-                "relation": None,
-                "description": None,
-            },
+            "accused_details": json.loads(r.accused_details) if r.accused_details else None,
             "logged_at": r.logged_at,
             "coordinates": json.loads(r.coordinates),
             "encrypted_audio_path": r.encrypted_audio_path,
