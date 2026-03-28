@@ -1,9 +1,9 @@
 from datetime import datetime
 
-from speech import process_audio
-from classifier import classify_event, clean_events
-from entity_extractor import extract_entities
-from legal_mapper import legal_mapping
+from core.speech import process_audio
+from core.classifier import classify_event, clean_events
+from core.entity_extractor import extract_entities
+from core.legal_mapper import legal_mapping
 
 def _normalize_browser_location(browser_location):
     if not isinstance(browser_location, dict):
@@ -50,6 +50,7 @@ def full_pipeline(audio_path, browser_location=None):
 
     return {
         "original_audio": speech_output["original_audio"],
+        "regional_text": speech_output.get("regional_text"),
         "transcript": text,
         "logged_at": timestamp.isoformat(),
         "coordinates": coordinates,
