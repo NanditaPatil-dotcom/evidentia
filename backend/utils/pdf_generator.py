@@ -1,6 +1,7 @@
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
+
 def wrap(text, n=80):
     words = text.split()
     lines, cur = [], ""
@@ -13,6 +14,22 @@ def wrap(text, n=80):
             cur = w + " "
     lines.append(cur)
     return lines
+
+
+def format_accused(details):
+    if not isinstance(details, dict):
+        return "Not specified"
+
+    name = details.get("name")
+    relation = details.get("relation")
+
+    if name and relation:
+        return f"{name} ({relation.title()})"
+
+    if name:
+        return name
+
+    return "Not specified"
 
 
 def generate_pdf(records, path):
@@ -41,6 +58,9 @@ def generate_pdf(records, path):
         for line in wrap(primary_text):
             c.drawString(60, y, line)
             y -= 15
+
+        c.drawString(50, y, "Accused: " + format_accused(r.get("accused_details")))
+        y -= 15
 
         c.drawString(50, y, "Events: " + ", ".join([e["label"] for e in r["events"]]))
         y -= 15
