@@ -3,10 +3,15 @@ from fastapi import APIRouter
 try:
     from backend.database import SessionLocal
     from backend.models import User
-    from backend.utils.auth import hash_password, verify_password
 except ModuleNotFoundError:
     from database import SessionLocal
     from models import User
+
+try:
+    from backend.utils.auth import hash_password, verify_password
+except ModuleNotFoundError as exc:
+    if exc.name not in {"backend", "backend.utils", "backend.utils.auth"}:
+        raise
     from utils.auth import hash_password, verify_password
 
 router = APIRouter()
