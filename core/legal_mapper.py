@@ -65,18 +65,6 @@ def legal_mapping(events, entities):
         "statements": statements
     }
 
-if __name__ == "__main__":
-    events = [{"label": "physical abuse"}]
 
-    entities = {
-        "date": "yesterday",
-        "time": "night",
-        "location": "residence",
-        "person": "accused"
-    }
-
-    output = legal_mapping(events, entities)
-
-    print(output)
 
 
