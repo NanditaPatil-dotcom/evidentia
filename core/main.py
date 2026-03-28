@@ -1,5 +1,6 @@
 from speech import process_audio
 from classifier import classify_event
+from entity_extractor import extract_entities
 
 
 def full_pipeline(audio_path):
@@ -10,11 +11,14 @@ def full_pipeline(audio_path):
 
     # 🧠 Step 2: Event classification
     events = classify_event(text)
+    # 🏷️ Step 3: Entity extraction
+    entities = extract_entities(text)
 
     return {
         "original_audio": speech_output["original_audio"],
         "transcript": text,
-        "events": events
+        "events": events,
+        "entities": entities
     }
 
 
