@@ -1,9 +1,15 @@
 from datetime import datetime
 
-from core.speech import process_audio
-from core.classifier import classify_event, clean_events
-from core.entity_extractor import extract_entities
-from core.legal_mapper import legal_mapping
+try:
+    from core.speech import process_audio
+    from core.classifier import classify_event, clean_events
+    from core.entity_extractor import extract_entities
+    from core.legal_mapper import legal_mapping
+except ModuleNotFoundError:
+    from speech import process_audio
+    from classifier import classify_event, clean_events
+    from entity_extractor import extract_entities
+    from legal_mapper import legal_mapping
 
 def _normalize_browser_location(browser_location):
     if not isinstance(browser_location, dict):
@@ -24,19 +30,19 @@ def _normalize_browser_location(browser_location):
     return None, coordinates
 
 
-def full_pipeline(audio_path, browser_location=None):
-    # 🎤 Step 1: Speech → English
-    speech_output = process_audio(audio_path)
+def full_pipeline(audio_input, browser_location=None):
+    if isinstance(audio_input, dict):
+        speech_output = audio_input
+    else:
+        speech_output = process_audio(audio_input)
 
-    text = speech_output["transcript"].strip().lower()
+    english_text = speech_output.get("english_text", "").strip()
+    analysis_text = english_text.lower()
     timestamp = datetime.now()
     location_text, coordinates = _normalize_browser_location(browser_location)
 
-    # 🧠 Step 2: Event classification
-    events = classify_event(text, top_k=2)
-    events = clean_events(events)
-    # 🏷️ Step 3: Entity extraction
-    entities = extract_entities(text)
+    events = clean_events(classify_event(analysis_text, top_k=2))
+    entities = extract_entities(analysis_text)
     entities.update(
         {
             "date": timestamp.strftime("%d %B %Y"),
@@ -44,26 +50,23 @@ def full_pipeline(audio_path, browser_location=None):
             "location": location_text,
         }
     )
-
-    # ⚖️ Step 4: Legal mapping
-    legal = legal_mapping(events, entities)
+    legal_output = legal_mapping(events, entities)
 
     return {
-        "original_audio": speech_output["original_audio"],
+        "original_audio": speech_output.get("original_audio"),
         "regional_text": speech_output.get("regional_text"),
-        "transcript": text,
+        "english_text": english_text,
         "logged_at": timestamp.isoformat(),
         "coordinates": coordinates,
         "events": events,
         "entities": entities,
-        "laws": legal["laws"],
-        "statements": legal["statements"]
+        "laws": legal_output.get("laws", []),
+        "statements": legal_output.get("statements", []),
     }
 
 
-# 🧪 Run test
 if __name__ == "__main__":
-    result = full_pipeline("sample.wav")
-
-    print("\noutput")
+    audio_path = "sample1.wav"
+    speech_output = process_audio(audio_path)
+    result = full_pipeline(speech_output)
     print(result)
