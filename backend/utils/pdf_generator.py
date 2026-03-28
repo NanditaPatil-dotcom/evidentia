@@ -1,6 +1,5 @@
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
-from datetime import datetime
 
 def wrap(text, n=80):
     words = text.split()
@@ -37,7 +36,9 @@ def generate_pdf(records, path):
 
         c.setFont("Helvetica", 10)
 
-        for line in wrap(r["transcript"]):
+        primary_text = r.get("english_text") or ""
+
+        for line in wrap(primary_text):
             c.drawString(60, y, line)
             y -= 15
 

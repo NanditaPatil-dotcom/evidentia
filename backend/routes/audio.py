@@ -2,7 +2,10 @@ from fastapi import APIRouter, UploadFile
 import shutil, os
 
 from core.main import full_pipeline
-from utils.encryption import encrypt_file, decrypt_file
+try:
+    from backend.utils.encryption import encrypt_file, decrypt_file
+except ModuleNotFoundError:
+    from utils.encryption import encrypt_file, decrypt_file
 
 router = APIRouter()
 

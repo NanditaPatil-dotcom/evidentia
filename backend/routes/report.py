@@ -1,56 +1,59 @@
 from fastapi import APIRouter
 from fastapi.responses import FileResponse
-from database import SessionLocal
-from models import Record
 import json, os
+from datetime import datetime
 
-from utils.pdf_generator import generate_pdf
+try:
+    from backend.database import SessionLocal
+    from backend.models import Record
+    from backend.utils.pdf_generator import generate_pdf
+except ModuleNotFoundError:
+    from database import SessionLocal
+    from models import Record
+    from utils.pdf_generator import generate_pdf
 
 router = APIRouter()
 
 
+def _format_record(record: Record) -> dict:
+    return {
+        "english_text": record.english_text,
+        "events": json.loads(record.events),
+        "entities": json.loads(record.entities),
+        "laws": json.loads(record.laws),
+        "statements": json.loads(record.statements),
+        "logged_at": record.logged_at,
+        "coordinates": json.loads(record.coordinates),
+    }
+
+
 @router.get("/generate-report/")
-def generate_report(user_id: int):
+def generate_report():
     db = SessionLocal()
 
-    records = db.query(Record).filter(Record.user_id == user_id).all()
+    records = db.query(Record).all()
 
     db.close()
 
     return {
         "total": len(records),
-        "records": [
-            {
-                "transcript": r.transcript,
-                "events": json.loads(r.events),
-                "laws": json.loads(r.laws),
-                "statements": json.loads(r.statements)
-            }
-            for r in records
-        ]
+        "records": [_format_record(record) for record in records]
     }
 
 
 @router.get("/generate-pdf/")
-def generate_pdf_api(user_id: int):
+def generate_pdf_api():
 
     db = SessionLocal()
-    records = db.query(Record).filter(Record.user_id == user_id).all()
+    records = db.query(Record).all()
     db.close()
 
-    data = [
-        {
-            "transcript": r.transcript,
-            "events": json.loads(r.events),
-            "laws": json.loads(r.laws),
-            "statements": json.loads(r.statements)
-        }
-        for r in records
-    ]
+    formatted_data = [_format_record(record) for record in records]
 
-    os.makedirs("temp", exist_ok=True)
-    path = f"temp/report_{user_id}.pdf"
+    os.makedirs("reports", exist_ok=True)
+    filename = f"report_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.pdf"
+    path = f"reports/{filename}"
 
-    generate_pdf(data, path)
+    generate_pdf(formatted_data, path)
 
     return FileResponse(path, media_type="application/pdf", filename="report.pdf")

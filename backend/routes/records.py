@@ -1,7 +1,12 @@
 from fastapi import APIRouter
-from database import SessionLocal
-from models import Record
 import json
+
+try:
+    from backend.database import SessionLocal
+    from backend.models import Record
+except ModuleNotFoundError:
+    from database import SessionLocal
+    from models import Record
 
 router = APIRouter()
 
@@ -10,15 +15,15 @@ def save_record(data: dict):
     db = SessionLocal()
 
     record = Record(
-        user_id=data["user_id"],
-        transcript=data["transcript"],
+        regional_text=data["regional_text"],
+        english_text=data["english_text"],
         events=json.dumps(data["events"]),
         entities=json.dumps(data["entities"]),
         laws=json.dumps(data["laws"]),
         statements=json.dumps(data["statements"]),
-        timestamp=data["timestamp"],
-        location=json.dumps(data["location"]),
-        encrypted_audio_path=data["encrypted_audio_path"]
+        logged_at=data["logged_at"],
+        coordinates=json.dumps(data["coordinates"]),
+        encrypted_audio_path=data.get("encrypted_audio_path"),
     )
 
     db.add(record)
@@ -29,23 +34,25 @@ def save_record(data: dict):
 
 
 @router.get("/get-records/")
-def get_records(user_id: int):
+def get_records():
     db = SessionLocal()
 
-    records = db.query(Record).filter(Record.user_id == user_id).all()
+    records = db.query(Record).all()
 
     result = []
 
     for r in records:
         result.append({
             "id": r.id,
-            "transcript": r.transcript,
+            "regional_text": r.regional_text,
+            "english_text": r.english_text,
             "events": json.loads(r.events),
             "entities": json.loads(r.entities),
             "laws": json.loads(r.laws),
             "statements": json.loads(r.statements),
-            "timestamp": r.timestamp,
-            "location": json.loads(r.location)
+            "logged_at": r.logged_at,
+            "coordinates": json.loads(r.coordinates),
+            "encrypted_audio_path": r.encrypted_audio_path,
         })
 
     db.close()

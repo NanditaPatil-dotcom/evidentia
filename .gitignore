@@ -246,5 +246,7 @@ logs/
 secrets.json
 credentials.json
 
-sample.wav
-sample1.wav
+
+
+temp/
+reports/
