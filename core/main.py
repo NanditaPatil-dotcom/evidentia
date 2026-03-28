@@ -30,7 +30,25 @@ def _normalize_browser_location(browser_location):
     return None, coordinates
 
 
-def full_pipeline(audio_input, browser_location=None):
+def _normalize_accused_details(accused):
+    details = {
+        "name": None,
+        "relation": None,
+        "description": None,
+    }
+
+    if not isinstance(accused, dict):
+        return details
+
+    for key in details:
+        value = accused.get(key)
+        if value is not None:
+            details[key] = value
+
+    return details
+
+
+def full_pipeline(audio_input, browser_location=None, accused=None):
     if isinstance(audio_input, dict):
         speech_output = audio_input
     else:
@@ -40,6 +58,7 @@ def full_pipeline(audio_input, browser_location=None):
     analysis_text = english_text.lower()
     timestamp = datetime.now()
     location_text, coordinates = _normalize_browser_location(browser_location)
+    accused_details = _normalize_accused_details(accused)
 
     events = clean_events(classify_event(analysis_text, top_k=2))
     entities = extract_entities(analysis_text)
@@ -58,6 +77,7 @@ def full_pipeline(audio_input, browser_location=None):
         "english_text": english_text,
         "logged_at": timestamp.isoformat(),
         "coordinates": coordinates,
+        "accused_details": accused_details,
         "events": events,
         "entities": entities,
         "laws": legal_output.get("laws", []),

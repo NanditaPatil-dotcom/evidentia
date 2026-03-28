@@ -15,13 +15,20 @@ router = APIRouter()
 async def process_audio(
     file: UploadFile,
     browser_location: str | None = Form(None),
+    accused: str | None = Form(None),
 ):
     parsed_browser_location = None
+    parsed_accused = None
     if browser_location:
         try:
             parsed_browser_location = json.loads(browser_location)
         except json.JSONDecodeError as exc:
             raise HTTPException(status_code=400, detail="Invalid browser_location JSON") from exc
+    if accused:
+        try:
+            parsed_accused = json.loads(accused)
+        except json.JSONDecodeError as exc:
+            raise HTTPException(status_code=400, detail="Invalid accused JSON") from exc
 
     os.makedirs("temp", exist_ok=True)
 
@@ -36,7 +43,11 @@ async def process_audio(
     dec_path = f"temp/dec_{file.filename}"
     decrypt_file(enc_path, dec_path)
 
-    result = full_pipeline(dec_path, browser_location=parsed_browser_location)
+    result = full_pipeline(
+        dec_path,
+        browser_location=parsed_browser_location,
+        accused=parsed_accused,
+    )
 
     os.remove(dec_path)
 

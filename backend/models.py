@@ -16,6 +16,7 @@ class Record(Base):
     entities = Column(Text)
     laws = Column(Text)
     statements = Column(Text)
+    accused_details = Column(Text)
 
     logged_at = Column(String)
     coordinates = Column(Text)
