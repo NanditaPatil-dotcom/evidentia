@@ -1,28 +1,28 @@
 # backend/utils/encryption.py
 
+import hashlib
+import json
 import os
+
+from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# AES-256-GCM replaces Fernet for audio file encryption.
-# Reasons:
+# AES-256-GCM for audio file encryption.
 #   - Faster on binary data (audio files)
 #   - Explicit nonce prepended to file (transparent format)
 #   - Authenticated encryption: detects tampering (same guarantee as Fernet)
-#   - Does not load entire file into RAM in one Fernet token
-#   - Industry standard for file-level encryption
 
 _key_hex = os.getenv("AUDIO_ENCRYPTION_KEY")
 
 if not _key_hex:
     raise RuntimeError(
         "AUDIO_ENCRYPTION_KEY must be set in .env before the app can start. "
-        "Generate one with: python -c \"import os; print(os.urandom(32).hex())\""
+        'Generate one with: python -c "import os; print(os.urandom(32).hex())"'
     )
 
-# Key must be exactly 32 bytes for AES-256
 try:
     _key = bytes.fromhex(_key_hex)
     if len(_key) != 32:
@@ -30,10 +30,31 @@ try:
 except ValueError:
     raise RuntimeError(
         "AUDIO_ENCRYPTION_KEY must be a 64-character hex string (32 bytes). "
-        "Generate one with: python -c \"import os; print(os.urandom(32).hex())\""
+        'Generate one with: python -c "import os; print(os.urandom(32).hex())"'
     )
 
 _aesgcm = AESGCM(_key)
+
+# Fernet for encrypted record payloads stored on disk (separate from field-level DB encryption).
+_key_raw = os.getenv("ENCRYPTION_KEY")
+if not _key_raw:
+    raise RuntimeError("ENCRYPTION_KEY must be set before the app can start.")
+
+fernet = Fernet(_key_raw)
+
+RECORDS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "secure_records")
+
+
+def _ensure_records_dir():
+    os.makedirs(RECORDS_DIR, exist_ok=True)
+
+
+def _record_path(record_hash):
+    return os.path.join(RECORDS_DIR, f"{record_hash}.bin")
+
+
+def _canonicalize_record(record):
+    return json.dumps(record, sort_keys=True, default=str).encode("utf-8")
 
 
 def encrypt_file(path: str) -> str:
@@ -53,13 +74,11 @@ def encrypt_file(path: str) -> str:
     with open(path, "rb") as f:
         data = f.read()
 
-    # 12-byte (96-bit) nonce — standard for AES-GCM, never reuse
     nonce = os.urandom(12)
     encrypted = _aesgcm.encrypt(nonce, data, None)
 
     enc_path = path + ".enc"
     with open(enc_path, "wb") as f:
-        # Prepend nonce so decrypt_file can extract it without storing separately
         f.write(nonce + encrypted)
 
     return enc_path
@@ -81,7 +100,6 @@ def decrypt_file(enc_path: str, output_path: str) -> str:
     with open(enc_path, "rb") as f:
         raw = f.read()
 
-    # First 12 bytes are the nonce written by encrypt_file
     nonce = raw[:12]
     ciphertext = raw[12:]
 
@@ -91,3 +109,31 @@ def decrypt_file(enc_path: str, output_path: str) -> str:
         f.write(decrypted)
 
     return output_path
+
+
+def store_encrypted_record(record):
+    _ensure_records_dir()
+    payload = _canonicalize_record(record)
+    encrypted_payload = fernet.encrypt(payload)
+    record_hash = hashlib.sha256(encrypted_payload).hexdigest()
+
+    with open(_record_path(record_hash), "wb") as f:
+        f.write(encrypted_payload)
+
+    return record_hash
+
+
+def load_encrypted_record(record_hash):
+    path = _record_path(record_hash)
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Encrypted record payload not found for hash {record_hash}")
+
+    with open(path, "rb") as f:
+        encrypted_payload = f.read()
+
+    actual_hash = hashlib.sha256(encrypted_payload).hexdigest()
+    if actual_hash != record_hash:
+        raise ValueError("Encrypted record payload hash mismatch")
+
+    decrypted_payload = fernet.decrypt(encrypted_payload)
+    return json.loads(decrypted_payload.decode("utf-8"))

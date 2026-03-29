@@ -98,9 +98,11 @@ def _build_record_ops(index, record):
     if record.get("coordinates"):
         ops.append(("meta", "Location:", record["coordinates"]))
 
-    statement_lines = record.get("statements") or []
-    if statement_lines:
-        statement_text = " ".join(statement_lines)
+    statement_value = record.get("statements")
+    if isinstance(statement_value, list):
+        statement_text = " ".join(statement_value)
+    elif isinstance(statement_value, str) and statement_value.strip():
+        statement_text = statement_value
     else:
         statement_text = record.get("english_text", "")
     ops.append(("section", "Statement:", _wrap_text(statement_text, 70)))

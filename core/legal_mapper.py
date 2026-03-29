@@ -1,19 +1,19 @@
 EVENT_TO_LAW = {
     "physical abuse": ["BNS Section 115", "IPC 323"],
-    "criminal intimidation": ["IPC 506"],
+    "threat": ["IPC 506"],
     "verbal abuse": ["Domestic Violence Act"],
+    "harassment": ["Domestic Violence Act"],
     "emotional abuse": ["Domestic Violence Act"],
-    "financial abuse": ["Domestic Violence Act"],
-    "dowry harassment": ["IPC 498A"]
+    "financial abuse": ["Domestic Violence Act"]
 }
 
 EVENT_TO_PHRASE = {
-    "physical abuse": "committed physical assault",
-    "criminal intimidation": "issued criminal threats",
+    "physical abuse": "physically assaulted the complainant",
+    "threat": "criminally intimidated the complainant",
     "verbal abuse": "verbally abused the complainant",
-    "emotional abuse": "caused emotional distress",
-    "financial abuse": "exercised financial control and abuse",
-    "dowry harassment": "subjected the complainant to dowry-related harassment"
+    "harassment": "harassed the complainant",
+    "emotional abuse": "caused emotional distress to the complainant",
+    "financial abuse": "financially exploited the complainant"
 }
 
 from datetime import datetime, timedelta

@@ -4,6 +4,7 @@ python-multipart==0.0.22
 sqlalchemy==2.0.48
 python-dotenv==1.2.2
 cryptography==46.0.6
+pyopenssl==26.0.0
 reportlab==4.4.10
 google-genai==1.68.0
 transformers==5.4.0

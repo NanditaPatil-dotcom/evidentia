@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Form, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 import json
 import shutil, os
 
@@ -13,7 +13,7 @@ router = APIRouter()
 
 @router.post("/process-audio/")
 async def process_audio(
-    file: UploadFile,
+    file: UploadFile = File(...),
     browser_location: str | None = Form(None),
     accused: str | None = Form(None),
 ):
