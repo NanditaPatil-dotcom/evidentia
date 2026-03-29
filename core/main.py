@@ -6,7 +6,7 @@ try:
     from core.entity_extractor import extract_entities
     from core.legal_mapper import legal_mapping
 except ModuleNotFoundError:
-    from core.speech_pipeline import process_audio
+    from speech_pipeline import process_audio
     from classifier import classify_event, clean_events
     from entity_extractor import extract_entities
     from legal_mapper import legal_mapping
@@ -65,8 +65,8 @@ def full_pipeline(audio_input, browser_location=None, accused=None):
     entities.update(
         {
             "date": timestamp.strftime("%d %B %Y"),
-            "time": timestamp.strftime("%I:%M %p"),
             "location": location_text,
+            "text": english_text,
         }
     )
     legal_output = legal_mapping(events, entities)
