@@ -1,19 +1,19 @@
 EVENT_TO_LAW = {
     "physical abuse": ["BNS Section 115", "IPC 323"],
-    "threat": ["IPC 506"],
+    "criminal intimidation": ["IPC 506"],
     "verbal abuse": ["Domestic Violence Act"],
-    "harassment": ["Domestic Violence Act"],
     "emotional abuse": ["Domestic Violence Act"],
-    "financial abuse": ["Domestic Violence Act"]
+    "financial abuse": ["Domestic Violence Act"],
+    "dowry harassment": ["IPC 498A"]
 }
 
 EVENT_TO_PHRASE = {
-    "physical abuse": "physically assaulted the complainant",
-    "threat": "criminally intimidated the complainant",
+    "physical abuse": "committed physical assault",
+    "criminal intimidation": "issued criminal threats",
     "verbal abuse": "verbally abused the complainant",
-    "harassment": "harassed the complainant",
-    "emotional abuse": "caused emotional distress to the complainant",
-    "financial abuse": "financially exploited the complainant"
+    "emotional abuse": "caused emotional distress",
+    "financial abuse": "exercised financial control and abuse",
+    "dowry harassment": "subjected the complainant to dowry-related harassment"
 }
 
 from datetime import datetime, timedelta
@@ -28,6 +28,17 @@ def normalize_date(date_text):
         return (today - timedelta(days=1)).strftime("%d %B %Y")
 
     return date_text  
+
+
+def interpret_time(text):
+    text = (text or "").lower()
+
+    if "night" in text:
+        return "between 8:00 PM and 11:00 PM"
+    if "morning" in text:
+        return "between 6:00 AM and 10:00 AM"
+
+    return None
 
 def map_laws(events):
     laws = []
@@ -44,7 +55,7 @@ def map_laws(events):
 
 def generate_statement(events, entities):
     date = normalize_date(entities.get("date"))
-    time = entities.get("time") or "unknown time"
+    time = entities.get("time") or interpret_time(entities.get("text", "")) or "unknown time"
 
     statements = []
 
@@ -66,6 +77,5 @@ def legal_mapping(events, entities):
         "laws": laws,
         "statements": statements
     }
-
 
 
